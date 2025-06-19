@@ -39,10 +39,17 @@ def build_root_agent():
 
     meal_order_agent = Agent(
         model=MODAL_GEMINI_2_0_FLASH,
-        name="meal_order_count_agent",
-        instruction=get_agent_instructions("meal_order_count_agent"),
-        description="Handles meal order queries",
+        name="meal_order_info_agent",
+        instruction=get_agent_instructions("meal_order_info_agent"),
+        description="Handles meal order count queries",
         tools=[meal_order_module.get_meal_order_details]
+    )
+
+    meal_issue_agent = Agent(
+        model=MODAL_GEMINI_2_0_FLASH,
+        name="meal_issue_agent",
+        instruction=get_agent_instructions("meal_issue_agent"),
+        description="This agent handles user queries related to meal ordering issues. It orchestrates responses by first retrieving flight information and then fetching meal order details, applying strict business rules to determine meal order eligibility.",
     )
 
     main_multi_tool_agent = Agent(
@@ -50,7 +57,7 @@ def build_root_agent():
         name="main_multi_tool_agent",
         instruction=get_agent_instructions("main_multi_tool_agent"),
         description="Handles catering modules",
-        sub_agents=[flight_info_agent, meal_order_agent]
+        sub_agents=[flight_info_agent, meal_order_agent, meal_issue_agent]
     )
 
     root_agent = Agent(
