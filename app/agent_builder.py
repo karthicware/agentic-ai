@@ -64,11 +64,11 @@ def build_root_agent():
         model=MODAL_GEMINI_2_0_FLASH,
         name="catering_agent_v2",
         instruction=get_agent_instructions("catering_agent_v2", 
-            user_name="John Doe",
+            user_name="Natarajan",
             user_preference_language="English",
             user_accessiblity_station="DXB",
             user_role="caterer",
-            user_preference_currency="USD"
+            user_preference_currency="AED"
         ),
         description="Root agent delegating to greeting/farewell/catering agents",
         sub_agents=[greeting_agent, farewell_agent, main_multi_tool_agent]
