@@ -1,10 +1,13 @@
 # agent_builder.py
 import os
 from dotenv import load_dotenv
-from google.adk.agents import Agent
+from google.adk.agents import Agent, SequentialAgent
 from app.agent_instructions import get_agent_instructions
 from modules.flight_module import FlightModule
 from modules.meal_order_module import MealOrderModule
+from modules.stock_count_module import StockCountModule
+from modules.erp_module import ERPModule
+from modules.export_excel_module import ExportTextModule
 
 load_dotenv()
 MODAL_GEMINI_2_0_FLASH = os.environ["GOOGLE_GENAI_MODAL"]
@@ -12,6 +15,9 @@ MODAL_GEMINI_2_0_FLASH = os.environ["GOOGLE_GENAI_MODAL"]
 def build_root_agent():
     flight_module = FlightModule()
     meal_order_module = MealOrderModule()
+    stock_count_module = StockCountModule()
+    erp_module = ERPModule()
+    export_text_module = ExportTextModule()
 
     greeting_agent = Agent(
         model=MODAL_GEMINI_2_0_FLASH,
@@ -52,12 +58,61 @@ def build_root_agent():
         description="This agent handles user queries related to meal ordering issues. It orchestrates responses by first retrieving flight information and then fetching meal order details, applying strict business rules to determine meal order eligibility.",
     )
 
+    stock_count_agent = Agent(
+        model=MODAL_GEMINI_2_0_FLASH,
+        name="stock_count_agent",
+        instruction=get_agent_instructions("stock_count_agent"),
+        description="Handles stock count queries",
+        tools=[stock_count_module.get_stock_count_details]
+    )
+
+    erp_agent = Agent(
+        model=MODAL_GEMINI_2_0_FLASH,
+        name="erp_agent",
+        instruction=get_agent_instructions("erp_agent"),
+        description="Handles ERP data queries",
+        tools=[erp_module.get_erp_details]
+    )
+
+    export_text_agent = Agent(
+        model=MODAL_GEMINI_2_0_FLASH,
+        name="export_text_agent",
+        instruction=get_agent_instructions("export_text_agent"),
+        description="Handles text file export functionality",
+        tools=[export_text_module.export_to_text, export_text_module.export_stock_count_to_text, export_text_module.export_pre_approval_data]
+    )
+
+    stock_count_reconciliation_agent = Agent(
+        model=MODAL_GEMINI_2_0_FLASH,
+        name="stock_count_reconciliation_agent",
+        instruction=get_agent_instructions("stock_count_reconciliation_agent"),
+        description="Handles stock count and ERP data comparison and reconciliation",
+        tools=[]
+    )
+
+    post_approval_export_agent = Agent(
+        model=MODAL_GEMINI_2_0_FLASH,
+        name="post_approval_export_agent",
+        instruction=get_agent_instructions("post_approval_export_agent"),
+        description="Exports ERP data to post-approval file if transaction is approved",
+        tools=[export_text_module.export_post_approval_data]
+    )
+
+    # --- Create the SequentialAgent ---
+    # This agent orchestrates the pipeline by running the sub_agents in order.
+    stock_count_approver_agent = SequentialAgent(
+        name="stock_count_approver_agent",
+        sub_agents=[stock_count_agent, export_text_agent, erp_agent, stock_count_reconciliation_agent, post_approval_export_agent],
+        description="Executes a sequence of stock count data retrieval, export, ERP data retrieval, reconciliation, and conditional post-approval export.",
+        # The agents will run in the order provided: Stock Count -> Export -> ERP -> Reconciliation -> Post-Approval Export
+    )
+
     main_multi_tool_agent = Agent(
         model=MODAL_GEMINI_2_0_FLASH,
         name="main_multi_tool_agent",
         instruction=get_agent_instructions("main_multi_tool_agent"),
         description="Handles catering modules",
-        sub_agents=[flight_info_agent, meal_order_agent, meal_issue_agent]
+        sub_agents=[flight_info_agent, meal_order_agent, meal_issue_agent, stock_count_approver_agent]
     )
 
     root_agent = Agent(

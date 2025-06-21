@@ -1,0 +1,5 @@
+book_actual | book_bulk | float_actual | float_book | item_code | item_desc       | transaction_id
+--------------------------------------------------------------------------------------------------
+95          | 100       | 49           | 50         | ITEM001   | Chicken Biryani | TXN001        
+72          | 75        | 28           | 30         | ITEM002   | Vegetable Curry | TXN001        
+118         | 120       | 59           | 60         | ITEM003   | Rice Pilaf      | TXN001        

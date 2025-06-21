@@ -1,0 +1,5 @@
+book_actual | book_bulk | float_actual | float_book | is_review_yn | item_code | item_desc      
+------------------------------------------------------------------------------------------------
+95          | 100       | 48           | 50         | N            | ITEM001   | Chicken Biryani
+72          | 75        | 29           | 30         | N            | ITEM002   | Vegetable Curry
+118         | 120       | 58           | 60         | N            | ITEM003   | Rice Pilaf     
