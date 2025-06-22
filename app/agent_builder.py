@@ -8,6 +8,7 @@ from modules.meal_order_module import MealOrderModule
 from modules.stock_count_module import StockCountModule
 from modules.erp_module import ERPModule
 from modules.export_excel_module import ExportTextModule
+from modules.knowledge_module import KnowledgeModule
 
 load_dotenv()
 MODAL_GEMINI_2_0_FLASH = os.environ["GOOGLE_GENAI_MODAL"]
@@ -18,6 +19,7 @@ def build_root_agent():
     stock_count_module = StockCountModule()
     erp_module = ERPModule()
     export_text_module = ExportTextModule()
+    knowledge_module = KnowledgeModule()
 
     greeting_agent = Agent(
         model=MODAL_GEMINI_2_0_FLASH,
@@ -98,6 +100,14 @@ def build_root_agent():
         tools=[export_text_module.export_post_approval_data]
     )
 
+    knowledge_agent = Agent(
+        model=MODAL_GEMINI_2_0_FLASH,
+        name="knowledge_agent",
+        instruction=get_agent_instructions("knowledge_agent"),
+        description="Handles detailed knowledge queries by searching the vector database and providing comprehensive answers",
+        tools=[knowledge_module.get_knowledge_context, knowledge_module.search_specific_topic]
+    )
+
     # --- Create the SequentialAgent ---
     # This agent orchestrates the pipeline by running the sub_agents in order.
     stock_count_approver_agent = SequentialAgent(
@@ -112,7 +122,7 @@ def build_root_agent():
         name="main_multi_tool_agent",
         instruction=get_agent_instructions("main_multi_tool_agent"),
         description="Handles catering modules",
-        sub_agents=[flight_info_agent, meal_order_agent, meal_issue_agent, stock_count_approver_agent]
+        sub_agents=[flight_info_agent, meal_order_agent, meal_issue_agent, stock_count_approver_agent, knowledge_agent]
     )
 
     root_agent = Agent(

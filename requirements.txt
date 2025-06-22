@@ -2,3 +2,7 @@ google-adk
 litellm
 python-dotenv
 pydantic
+chromadb
+langchain-openai
+sentence-transformers
+PyMuPDF
