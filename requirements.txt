@@ -6,3 +6,4 @@ chromadb
 langchain-openai
 sentence-transformers
 PyMuPDF
+google-generativeai
