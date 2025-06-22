@@ -18,7 +18,7 @@ def get_agent_instructions(agent_type: str, **kwargs) -> str:
             **Delegation Rules:**
             - For greetings (hi, hello, etc.): Delegate to 'greeting_agent'
             - For farewells (bye, goodbye, see you, etc.): Delegate to 'farewell_agent'
-            - For ALL other queries (flight info, meal orders, stock count, ERP, exports, knowledge): Delegate to 'main_multi_tool_agent'
+            - For ALL other queries (flight info, meal orders, stock count, ERP, exports, knowledge, follow-up questions): Delegate to 'main_multi_tool_agent'
 
             **Important:**
             - Do not mention transferring to other agents
@@ -75,7 +75,7 @@ def get_agent_instructions(agent_type: str, **kwargs) -> str:
 
         **Routing Rules:**
         - **Meal Order Queries:** Delegate to `meal_order_info_agent`
-        - **Meal Order Issues/Problems:** Delegate to `meal_support_agent` (when meal orders are not found, have issues, or need investigation)
+        - **Follow-up Questions (more details, explanation, analysis):** Delegate to `knowledge_agent`
         - **Stock Count Queries:** Delegate to `stock_count_agent`
         - **ERP Data Queries:** Delegate to `erp_agent`
         - **Text Export Requests:** Delegate to `export_text_agent`
@@ -83,8 +83,7 @@ def get_agent_instructions(agent_type: str, **kwargs) -> str:
         - **Knowledge Queries:** Delegate to `knowledge_agent`
 
         **Available Sub-Agents:**
-        - `meal_order_info_agent`: Handles complete meal order flow
-        - `meal_support_agent`: Handles meal ordering support, validations, and investigations when meal orders are not found
+        - `meal_order_info_agent`: Handles complete meal order flow including analysis when meal orders are not found
         - `stock_count_agent`: Retrieves stock count information
         - `erp_agent`: Retrieves ERP data
         - `export_text_agent`: Handles text file exports
@@ -96,7 +95,7 @@ def get_agent_instructions(agent_type: str, **kwargs) -> str:
         - Delegate the complete query to the selected sub-agent
         - Let the sub-agent handle all implementation details
         - Do not implement any business logic yourself
-        - When meal orders are not found or have issues, route to meal_support_agent for investigation
+        - Never mention internal agent transfers, delegation, or agent names in your response
 
         Do not mention internal agent transfers; provide seamless user experience by delegating appropriately.
         """
@@ -199,19 +198,53 @@ def get_agent_instructions(agent_type: str, **kwargs) -> str:
 
         **Error Handling:**
         - Flight not found: Inform "Flight information not found for the specified flight number and date."
-        - No meal orders found: Delegate to `meal_support_agent` for investigation and detailed analysis
+        - No meal orders found: Analyze the flight and meal order eligibility, then present the results to the user. Do not mention any internal delegation or agent names.
         - Invalid parameters: Ask for correct flight number and date format
         - Check response status and display appropriate error messages with context
+
+        **Validation Rules (when meal orders are not found):**
+        Apply the following validation rules in sequence:
+
+        a. **Flight Service Type Check:**
+           - Only proceed if the `serviceType` of the flight is `'J'`.
+           - If the `serviceType` is not `'J'`, respond with:
+             ➤ _"We regret to inform you that meal services are only available for passenger flights (service type J). This flight appears to be a different service type and does not have meal ordering facilities."_
+
+        b. **Flight Departure Check:**
+           - Compare the current time (DD-MMM-YYYY) with the `flightDate` field from the flight data.
+           - If the flight has already departed (i.e., `flightDate` is in the past), respond with:
+             ➤ _"We apologize, but meal ordering is not available as this flight has already departed."_
+           - If the flight date is in the future, the flight has NOT departed yet.
+
+        c. **Flight Finalization Check:**
+           - If the flight status is `'FF'` (Finalized), respond with:
+             ➤ _"We regret to inform you that meal orders cannot be processed as this flight has been finalized."_
+
+        **Response Format for No Meal Orders:**
+        When meal orders are not found, present your analysis in this format:
+
+        **Flight Information:**
+        - Flight Number: [flight number]
+        - Flight Date: [flight date]
+        - Service Type: [service type]
+        - Flight Status: [flight status]
+
+        **Meal Order Eligibility:**
+        - [ELIGIBLE/INELIGIBLE] - [reason]
+
+        **Meal Order Details:**
+        No meal order details found for this flight.
 
         **Important Notes:**
         - Handle the complete meal order flow from flight info to meal orders
         - Present information in a clear, organized tabular format
         - Handle both successful and error responses appropriately
         - Do not ask for information that was already provided in the query
-        - When meal orders are not found, delegate to meal_support_agent for comprehensive investigation
-        - Let the meal_support_agent handle all validation rules and detailed explanations
+        - When meal orders are not found, analyze the flight eligibility and present the results directly
+        - Never mention internal agent transfers, delegation, or agent names in your response
+        - When users ask for more details, explanation, or analysis, delegate to the knowledge agent for comprehensive information
 
-        Remember: Your role is to handle complete meal order requests by first getting flight information and then retrieving meal order details. If meal orders are not found, delegate to the meal_support_agent for investigation and detailed analysis.
+        Remember: Your role is to handle complete meal order requests by first getting flight information and then retrieving meal order details. If meal orders are not found, analyze the flight eligibility and present the results directly to the user without mentioning any internal processes. When users request more details or explanations, connect them to the knowledge agent for comprehensive analysis.
         """
         ),
         "meal_support_agent": (
